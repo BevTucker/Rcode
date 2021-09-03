@@ -1,0 +1,412 @@
+---
+title: "IST707_HW4_Clustering"
+author: "Beverlyn Tucker"
+date: "4/25/2020"
+---
+
+```{r load-pacages, include=FALSE}
+#Pacakages
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(reshape2)
+library(reshape)
+library(ggplot2)
+library(knitr)
+library(stats) 
+library(flexclust)
+library(mclust)
+library(cluster)
+library(stats)
+library(factoextra) # clustering algorithms & visualization
+library(grDevices)
+library(scales)
+library(ggfortify)
+library(dendextend)
+```
+##Introduction
+The ratification of the Constitution of the United States of America was led by three founding fathers, Alexander Hamilton, James Madison, and John Jay. Collectively, they contributed to the 85 papers, known to this day as The Federalist Papers. These papers provided the groundwork and the intent of the Constitution. However, each of the authors would often sign their work as the Latin ‘Publius’, rather than their names. It is known today that of the 85 articles, 74 have had identified with an author(s). The remaining 11 controversial papers have claimed to be written by either Hamilton or Madison. This controversy has led to various types of analysis. More recently, various types of text analysis approaches have exercised to help estimate the likelihood of one author over another.
+
+The analysis provided in this study will attempt to use some clustering techniques to determine distance measures, a sum of square errors, and corresponding visualizations. An attempt will be made to justify whether the disputed papers are more likely to be written by Alexander Hamilton or James Madison.
+
+```{r}
+df <- read_csv("D:/1. Syracuse/6.IST707_DATA_ANALYTICS/fedPapers85.csv")
+##head((df))
+summary((df))
+```
+
+
+
+## Data Preparation:
+A CSV dataset representing instances authorship:
+Alexander Hamilton (Hamilton)
+James Madison (Madison)
+John Jay (Jay)
+Alexander Hamilton and James Madison (HM)
+Alexander Hamilton or James Madison (dispt)
+Each having a normalized frequency measure of 70 words:
+## Data Cleaning
+Removing filename The second column titled filename, corresponds to a supplied textfile, containing the content for the respective paper, with respect to the given author.
+```{r}
+df<-df[,(-2)]
+```
+```{r}
+head(df)
+```
+```{r}
+##Unlist author process for to convert to numeric
+unlist(df$author)
+```
+
+
+##Mutate the character author to numeric.
+This is written as a text after execution due to the knitting process throw an error after 
+##df %>% 
+mutate(df, M_author=case_when(author== "dispt" ~1,
+                         author=="Hamilton" ~2,
+                         author== "HM" ~3,
+                         author=="Jay" ~4, 
+                         author=="Madison" ~5,))->df
+```{r}
+df$M_author
+df1<-df
+```
+
+
+##```{r}
+##unlist(df1$M_author)
+##``
+```{r}
+##df1$M_author= as.numeric(df1$M_author)
+```
+
+```{r}
+##REMOVE AUTHOR
+df1 = df1[, -c(1)]
+```
+```{r}
+df1
+```
+#Kmeans Clustering:
+four clusters implemented, since there were three different
+authors, and two (hamilton + madison) coauthored.
+
+```{r}
+##Four Cluster by Author
+set.seed((20))
+model_r<- kmeans(df1, centers =4, nstart =30)
+model_r
+model_r$size
+##table(df1$M_author,model_r$cluster) ## copy table result below due to throw an error during knitting process 
+fviz_cluster(model_r,data=df1)
+```
+## First Result K-means 4 cluster
+Within cluster sum of squares by cluster:
+[1] 5.4981349 3.4275893 1.4444369 0.9230551
+ (between_SS / total_SS =  92.7 %)
+ 
+ table(df1$M_author,model_r$cluster)
+     1  2  3  4
+  1  0  0  0 11 > Purple > Dispt
+  2 51  0  0  0 > red    > Hamiltton
+  3  0  3  0  0 > green  > HM
+  4  0  5  0  0 > green  > HM
+  5  0  0 15  0 > Blue   > Madison 
+
+Fist analysis Hamilton wrote majority of the dispute papers
+
+
+```{r}
+##Five Cluster by Author
+set.seed((20))
+model_r1<- kmeans(df1, centers =4, nstart =30)
+model_r1
+model_r$size
+##table(df1$M_author,model_r2$cluster)
+fviz_cluster(model_r,data=df1)
+```
+
+## Result 2 K-means clustering with 4 clusters of sizes 51, 8, 15, 11
+Within cluster sum of squares by cluster:
+[1] 5.4981349 3.4275893 1.4444369 0.9230551
+ (between_SS / total_SS =  92.7 %)
+ 
+ model_r$size
+ [1] 51  8 15 11
+ 
+ table(df1$M_author,model_r2$cluster)
+     1  2  3
+  1  0  0 11 > Blue  > Dispt
+  2 51  0  0 > Red   > Hamilton
+  3  3  0  0 > Red   > HM
+  4  0  5  0 > Green > Jay
+  5  0 15  0 > Green > Madison
+  
+ 
+The Cluster sums of square results are consistent with the first run with 92.7%
+Jay and Madison have little similarity in their writing style. On the other hand, Purple is not in the cluster.
+Data shows that Hamilton and Madison wrote the dispute papers.
+
+
+```{r}
+##Three Cluster by Author
+set.seed((20))
+model_r2<- kmeans(df1, centers =3, nstart =30)
+model_r2
+model_r$size
+##table(df1$M_author,model_r2$cluster) table result copied below
+fviz_cluster(model_r,data=df1)
+
+```
+## First ran K-means clustering with 3 clusters of sizes 54, 20, 11
+
+Within cluster sum of squares by cluster:
+[1] 9.2336137 7.5691860 0.9230551
+ (between_SS / total_SS =  88.6 %)
+ 
+ model_r2$size
+ [1] 54 20 11
+ 
+ table(df1$M_author,model_r2$cluster)
+     1  2  3
+  1  0  0 11 > Blue > Dispt
+  2 51  0  0 > Red  > Hamiton 
+  3  3  0  0 > Red  > HM
+  4  0  5  0 > green > Jay
+  5  0 15  0 > Red  > Madison 
+```{r}
+##Second ran on 3K
+model_r3<- kmeans(df1, centers =3, nstart =30)
+model_r3
+model_r2$size
+##table(df1$M_author,model_r3$cluster)
+fviz_cluster(model_r,data=df1)
+```
+
+## Second ran on 3K K-means clustering with 3 clusters of sizes 11, 54, 20
+
+Within cluster sum of squares by cluster:
+[1] 9.2336137 7.5691860 0.9230551
+ (between_SS / total_SS =  88.6 %)
+ 
+ model_r2$size
+ [1] 54 20 11
+ 
+ table(df1$M_author,model_r2$cluster)
+     1  2  3
+  1  0  0 11 > Blue > Dispt
+  2 51  0  0 > Red  > Hamiton 
+  3  3  0  0 > Red  > HM
+  4  0  5  0 > green > Jay
+  5  0 15  0 > Red  > Madison 
+  
+This is the second ran of 3 clusters, and the result was consistent with the previous ran. 
+This analysis shows that Alexander Hamilton wrote the majority of the dispute papers.
+
+```{r}
+## CHOOSING Number 10 K
+k <- list()
+for(i in 1:10){
+  k[[i]] <- kmeans(df1[,1:4], i)
+}
+```
+```{r}
+betweenss_totss <- list()
+```
+```{r}
+for(i in 1:10){
+  betweenss_totss[[i]] <- k[[i]]$betweenss/k[[i]]$totss
+
+}
+```
+##Plotting the K
+```{r}
+plot(1:10, betweenss_totss, type = "b", 
+     ylab = "Between SS / Total SS", xlab = "Clusters (k)")
+
+```
+
+## What is the Best method 
+To determine best method to use
+```{r}
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward.D")
+
+# function to compute coefficient
+ac <- function(x) {
+  agnes(df1, method = x)$ac
+}
+
+map_dbl(m, ac)
+
+```
+
+```{r}
+d <- dist(df1, method = "euclidean")
+```
+```{r}
+# Hierarchical clustering using Ward.D Linkage
+hc1 <- hclust(d, method = "ward.D" )
+```
+```{r}
+###plot(hc1, cex = 0.6, hang = -1)
+fviz_dend(x= hc1, cex = 0.900, hang = -1, lwd = 0.10, k=3)
+k_colors=c("read","green","blue","magenta")
+
+```
+
+
+## The D is is euclidean
+```{r}
+hc2 <- hclust(d, method = "ward.D2" )
+sub_grp <- cutree(hc2, k = 4)
+# Number of members in each cluster
+table(sub_grp)
+
+```
+
+
+```{r}
+plot(hc2, cex = 0.6)
+rect.hclust(hc2, k = 3, border = 2:5)
+```
+##distance matrix
+Calculate the distance matrix
+
+```{r}
+res.dist <- dist(df1, method = "euclidean")
+
+# Compute 2 hierarchical clusterings
+hc1 <- hclust(res.dist, method = "ward.D")
+hc1
+hc2 <- hclust(res.dist, method = "ward.D2")
+hc2 
+```
+
+```{r}
+# Create two dendrograms
+dend1 <- as.dendrogram (hc1)
+dend1
+dend2 <- as.dendrogram (hc2)
+dend2
+```
+```{r}
+##tanglegram(dend1, dend2)
+```
+##The result
+
+
+
+The quality of the alignment of the two trees can be measured using the function entanglement. Entanglement is a measure between 1 (full entanglement) and 0 (no entanglement). A lower entanglement coefficient corresponds to a good alignment. 
+
+```{r}
+gap_stat <- clusGap(df1, FUN = hcut, nstart = 20, K.max = 3, B = 20)
+fviz_gap_stat(gap_stat)
+```
+
+This is observed data and the the reference data, the total intracluster variation is computed using different values of k. The gap statistic for a given k.
+
+## Manhattan Distance
+```{r}
+set.seed(20)
+Kdist<- get_dist(df1,method = "manhattan")
+Kdist
+fviz_dist(Kdist,gradient = list(low="#00AFBB",mid="white",hight="#FC4E07"))
+```
+## The minimum distance is 3.267  between two points
+
+
+## expectation maximization (em) clustering
+```{r}
+author = factor(df1$M_author, levels = 1:4, labels = c('Hamilton','HM','Jay','Madison'))
+
+X2 = data.matrix(df1)
+
+hc2  <- Mclust(X2)
+hc2 
+
+```
+
+```{r}
+summary(hc2)
+```
+
+```{r}
+
+plot(MclustDR(hc2, lambda = 1), what = 'scatterplot')
+
+```
+##Additional Visualization
+Affinity propagation
+```{r}
+simdf1<-negDistMat(df1[,1:71],r=2)
+
+```
+```{r}
+apdf1<-apcluster(simdf1,details=TRUE)
+apdf1
+```
+
+```{r}
+simdf2<-negDistMat(df1[,1:71],r=2)
+
+```
+```{r}
+apdf2<-apcluster(simdf2,details=TRUE)
+apdf2
+```
+ 
+```{r} 
+plot(apdf2,as.matrix(df1[, 3:4]), xlab ="M_author",ylab="a")
+```
+
+
+```{r} 
+plot(apdf2,as.matrix(df1[, 3:7]), xlab ="M_author",ylab="a")
+```
+```{r}
+simdf2<-negDistMat(df1[,1:71],r=2)
+
+```
+```{r}
+apdf2<-apcluster(simdf2,details=TRUE)
+apdf2
+```
+##Additional looking for collinearity
+```{r}
+library(psych)
+library(MASS)
+```
+```{r}
+pairs.panels(df1[3:7],
+             gap=0, bg=c("red","green","blue","yellow")[df1$M_author],pch = 21)
+```
+
+
+```{r}
+set.seed(20)
+ind <- sample(2, nrow(df1), replace = TRUE,
+              prob =c(0.6, 0.3))
+```
+```{r}
+training <- df1[ind==1,]
+testing <- df1[ind==2,]
+```
+
+## For this exploration there are collinear between writer
+linearModel<-lda(M_author~.,training)
+
+
+
+##Conclusions
+From this investigation, showed that the disputed authorship appears more closely related to Alexander Hamilton, then James Madison. When reviewing historical generalizations, Hamilton was most active between his time in the army, as well as congress. His experience, coupled with the perceived notion that states needed to be governed more closely, likely gave way to his stance on The Federalist Papers, and it needs to be ratified.
+
+James Madison, on the other hand, was known to be very detail-oriented, and at times reclusive. It would be interesting to understand why Hamilton wrote so many more papers than Madison and understand the relationship between the two founding fathers. Specifically, why did Madison write more papers with Hamilton than himself writing his own papers independently? Similarly, why was there a dispute between authorship, rather than agreement on co-authorship?
+
+Overall, this study has provided some good first steps for initial exploratory analysis. However, obtaining additional volumes, or papers authored by Madison could help further understand and differentiate from the Federalist Papers written by Hamilton. Similarly, since the study was to differentiate between the two authors, John Jay, could potentially be removed during the study and analysis.
+
+```{r}
+
+```
+
